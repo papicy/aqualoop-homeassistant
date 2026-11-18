@@ -33,6 +33,19 @@ Re-run the installer if a vendor OTA update replaces `init.js`. The integration 
 
 Copy `custom_components/aqualoop` to `<config>/custom_components/aqualoop`.
 
+The included `brand` folder supplies the integration icon on Home Assistant 2026.3 and later.
+For an existing installation, create `brand` inside the `aqualoop` integration folder and copy both images into it:
+
+```text
+custom_components\
+  aqualoop\
+    brand\
+      icon.png       (256 x 256)
+      icon@2x.png    (512 x 512)
+```
+
+Keep these exact filenames. Restart Home Assistant after copying the files; no configuration changes are needed.
+
 HACS cannot install [private GitHub repositories](https://hacs.xyz/docs/faq/private_repositories/).
 
 Restart Home Assistant. Then go to **Settings → Devices & services → Add integration → Aqualoop** and enter the IP address.
