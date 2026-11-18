@@ -1,0 +1,22 @@
+# Local backups and device credentials
+*.orig
+*.bak
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+.env
+.env.*
+credentials*.json
+secrets.yaml
+secrets.yml
+device/conf*.json
+device/users.json
+device/schedules.json
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/

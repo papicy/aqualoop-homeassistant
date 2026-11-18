@@ -1,0 +1,29 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Aqualoop water heater",
+        "description": "Enter the IP address or hostname of the Aqualoop controller.",
+        "data": { "host": "Host" }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the controller.",
+      "not_patched": "The controller is reachable but missing the Heater.Get/Heater.Set handlers. Install device/install_patch.py first.",
+      "not_aqualoop": "The device at this address is not an Aqualoop controller."
+    },
+    "abort": {
+      "already_configured": "This controller is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_temperature": { "name": "Water temperature" },
+      "setpoint": { "name": "Active setpoint" }
+    },
+    "binary_sensor": {
+      "heating": { "name": "Heating" },
+      "sensor_error": { "name": "Sensor error" }
+    }
+  }
+}
