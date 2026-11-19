@@ -10,7 +10,9 @@ from typing import Any
 
 import aiohttp
 
-TIMEOUT = aiohttp.ClientTimeout(total=10)
+TIMEOUT = aiohttp.ClientTimeout(total=15)
+TRANSPORT_RETRIES = 1
+RETRY_DELAY_SECONDS = 0.25
 
 
 class AqualoopError(Exception):
@@ -117,17 +119,25 @@ class AqualoopClient:
         self, method: str, params: dict[str, Any] | None = None, raw: bool = False
     ) -> Any:
         async with self._lock:
-            try:
-                async with self._session.post(
-                    f"{self._base}/{method}", json=params or {}, timeout=TIMEOUT
-                ) as resp:
-                    text = await resp.text()
-                    if resp.status == 404:
-                        raise AqualoopNotPatchedError(f"{method} not available")
-                    if resp.status != 200:
-                        raise AqualoopError(f"{method} failed ({resp.status}): {text.strip()}")
-            except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-                raise AqualoopError(f"{method}: {err}") from err
+            for attempt in range(TRANSPORT_RETRIES + 1):
+                try:
+                    async with self._session.post(
+                        f"{self._base}/{method}", json=params or {}, timeout=TIMEOUT
+                    ) as resp:
+                        text = await resp.text()
+                        if resp.status == 404:
+                            raise AqualoopNotPatchedError(f"{method} not available")
+                        if resp.status != 200:
+                            raise AqualoopError(
+                                f"{method} failed ({resp.status}): {text.strip()}"
+                            )
+                except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                    if attempt < TRANSPORT_RETRIES:
+                        await asyncio.sleep(RETRY_DELAY_SECONDS)
+                        continue
+                    message = str(err) or "request timed out"
+                    raise AqualoopError(f"{method}: {message}") from err
+                break
         if raw:
             return text.strip().strip('"')
         try:
