@@ -1,11 +1,11 @@
 {
   "domain": "aqualoop",
   "name": "Aqualoop Water Heater",
-  "documentation": "https://github.com/papicy/aqualoop-homeassistant#readme",
-  "issue_tracker": "https://github.com/papicy/aqualoop-homeassistant/issues",
   "codeowners": ["@papicy"],
   "config_flow": true,
+  "documentation": "https://github.com/papicy/aqualoop-homeassistant#readme",
   "integration_type": "device",
+  "issue_tracker": "https://github.com/papicy/aqualoop-homeassistant/issues",
   "iot_class": "local_polling",
   "requirements": [],
   "version": "1.0.0"
