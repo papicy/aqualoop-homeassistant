@@ -119,8 +119,9 @@ IP address.
 ## Entities
 
 - `water_heater`: current temperature, target temperature, and on/off (operation `electric`/`off`). Turning it on uses the last target (default 60 °C).
-- `sensor`: Water temperature, Active setpoint, Schedule count (with the
-  controller's currently configured schedules as attributes)
+- `sensor`: Water temperature, Active setpoint, Estimated power, Schedule count
+  (with the controller's currently configured schedules as attributes). Estimated
+  power reports 3000 W while the heating element is active and 0 W otherwise.
 - `binary_sensor`: Heating, Sensor error, Ready (diagnostic)
 
 The device is polled every 15 s by default. Change the interval from the

@@ -7,11 +7,12 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import EntityCategory, UnitOfTemperature
+from homeassistant.const import EntityCategory, UnitOfPower, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AqualoopConfigEntry
+from .const import HEATER_POWER_W
 from .entity import AqualoopEntity
 
 
@@ -22,6 +23,7 @@ async def async_setup_entry(
         [
             AqualoopTemperature(entry),
             AqualoopSetpoint(entry),
+            AqualoopPower(entry),
             AqualoopScheduleCount(entry),
         ]
     )
@@ -56,6 +58,23 @@ class AqualoopSetpoint(AqualoopEntity, SensorEntity):
     @property
     def native_value(self) -> int:
         return self.coordinator.data.setpoint
+
+
+class AqualoopPower(AqualoopEntity, SensorEntity):
+    """Estimate the heater's instantaneous electrical power draw."""
+
+    _attr_translation_key = "power"
+    _attr_icon = "mdi:flash"
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+
+    def __init__(self, entry: AqualoopConfigEntry) -> None:
+        super().__init__(entry, "power")
+
+    @property
+    def native_value(self) -> int:
+        return HEATER_POWER_W if self.coordinator.data.heating else 0
 
 
 class AqualoopScheduleCount(AqualoopEntity, SensorEntity):
