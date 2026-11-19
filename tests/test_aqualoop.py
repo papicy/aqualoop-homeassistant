@@ -160,14 +160,14 @@ async def test_entities_have_relevant_icons(hass: HomeAssistant, device) -> None
     expected_icons = {
         WH: "mdi:water-boiler",
         "sensor.aqualoop_aql00000001_water_temperature": "mdi:thermometer",
-        "sensor.aqualoop_aql00000001_setpoint": "mdi:target",
+        "sensor.aqualoop_aql00000001_active_setpoint": "mdi:target",
         "binary_sensor.aqualoop_aql00000001_heating": "mdi:fire",
         "binary_sensor.aqualoop_aql00000001_sensor_error": "mdi:alert-circle",
         "binary_sensor.aqualoop_aql00000001_ready": "mdi:check-circle",
     }
 
     for entity_id, icon in expected_icons.items():
-        assert hass.states[entity_id].attributes["icon"] == icon
+        assert hass.states.get(entity_id).attributes["icon"] == icon
 
 
 async def test_device_error_surfaces(hass: HomeAssistant, device) -> None:
