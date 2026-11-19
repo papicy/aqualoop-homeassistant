@@ -30,6 +30,7 @@
     "sensor": {
       "water_temperature": { "name": "Water temperature" },
       "setpoint": { "name": "Active setpoint" },
+      "power": { "name": "Estimated power" },
       "schedule_count": { "name": "Schedule count" }
     },
     "binary_sensor": {

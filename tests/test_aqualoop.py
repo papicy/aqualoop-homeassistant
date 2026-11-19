@@ -174,6 +174,7 @@ async def test_entities_have_relevant_icons(hass: HomeAssistant, device) -> None
         WH: "mdi:water-boiler",
         "sensor.aqualoop_aql00000001_water_temperature": "mdi:thermometer",
         "sensor.aqualoop_aql00000001_active_setpoint": "mdi:target",
+        "sensor.aqualoop_aql00000001_estimated_power": "mdi:flash",
         "sensor.aqualoop_aql00000001_schedule_count": "mdi:calendar-clock",
         "binary_sensor.aqualoop_aql00000001_heating": "mdi:fire",
         "binary_sensor.aqualoop_aql00000001_sensor_error": "mdi:alert-circle",
@@ -287,6 +288,35 @@ async def test_schedule_count_is_exposed(hass: HomeAssistant, device) -> None:
     assert schedule.attributes["schedules"] == [
         {"enabled": True, "start": "06:00", "setpoint": 60}
     ]
+
+
+async def test_estimated_power_tracks_heating_state(hass: HomeAssistant, device) -> None:
+    await setup(hass)
+
+    power = hass.states.get("sensor.aqualoop_aql00000001_estimated_power")
+    assert power is not None
+    assert power.state == "0"
+    assert power.attributes["unit_of_measurement"] == "W"
+
+    await hass.services.async_call(
+        WH_DOMAIN,
+        SERVICE_SET_TEMPERATURE,
+        {ATTR_ENTITY_ID: WH, ATTR_TEMPERATURE: 58},
+        blocking=True,
+    )
+    power = hass.states.get("sensor.aqualoop_aql00000001_estimated_power")
+    assert power is not None
+    assert power.state == "3000"
+
+    await hass.services.async_call(
+        WH_DOMAIN,
+        SERVICE_SET_OPERATION_MODE,
+        {ATTR_ENTITY_ID: WH, ATTR_OPERATION_MODE: STATE_OFF},
+        blocking=True,
+    )
+    power = hass.states.get("sensor.aqualoop_aql00000001_estimated_power")
+    assert power is not None
+    assert power.state == "0"
 
 
 async def test_options_flow_changes_poll_interval(hass: HomeAssistant, device) -> None:
