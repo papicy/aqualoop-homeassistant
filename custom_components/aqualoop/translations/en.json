@@ -10,7 +10,8 @@
     "error": {
       "cannot_connect": "Cannot connect to the controller.",
       "not_patched": "The controller is reachable but missing the Heater.Get/Heater.Set handlers. Install device/install_patch.py first.",
-      "not_aqualoop": "The device at this address is not an Aqualoop controller."
+      "not_aqualoop": "The device at this address is not an Aqualoop controller.",
+      "invalid_device": "The controller returned an invalid device identity."
     },
     "abort": {
       "already_configured": "This controller is already configured."
@@ -23,7 +24,8 @@
     },
     "binary_sensor": {
       "heating": { "name": "Heating" },
-      "sensor_error": { "name": "Sensor error" }
+      "sensor_error": { "name": "Sensor error" },
+      "ready": { "name": "Ready" }
     }
   }
 }

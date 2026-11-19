@@ -100,15 +100,33 @@ Restart Home Assistant after copying the files. No YAML configuration is needed.
 
 ## 3. Add the integration
 
-In Home Assistant, go to **Settings → Devices & services → Add integration**, search for **Aqualoop**, and enter the controller's IP address.
+### Home Assistant 2026.11 and newer
+
+The Marketplace is the recommended installation method. Open **Settings → Marketplace**,
+add this GitHub repository as a custom **Integration**, and install **Aqualoop Water
+Heater**. The repository must be public and have a `hacs.json` file at its root.
+
+### Home Assistant 2026.10 and older
+
+Use HACS and add this repository as a custom **Integration** repository. If the
+integration is listed in the HACS Marketplace, search for **Aqualoop Water Heater**
+and choose **Download** instead.
+
+After installation, restart Home Assistant if requested. Then go to
+**Settings → Devices & services → Add integration → Aqualoop** and enter the
+IP address.
 
 ## Entities
 
 - `water_heater`: current temperature, target temperature, and on/off (operation `electric`/`off`). Turning it on uses the last target (default 60 °C).
 - `sensor`: Water temperature, Active setpoint
-- `binary_sensor`: Heating, Sensor error (diagnostic)
+- `binary_sensor`: Heating, Sensor error, Ready (diagnostic)
 
 The device is polled every 15 s. It reads its own temperature sensor about once a minute.
+The water heater is unavailable while the controller reports that it is not ready.
+
+Home Assistant diagnostics include the controller identity and current heater state;
+credentials are not included.
 
 ## Security note
 

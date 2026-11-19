@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -16,6 +16,7 @@ from homeassistant.components.water_heater import (
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import ATTR_ENTITY_ID, ATTR_TEMPERATURE, CONF_HOST, STATE_OFF
 from homeassistant.core import HomeAssistant
+from homeassistant.core import State
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -101,6 +102,28 @@ async def test_config_flow_errors(hass: HomeAssistant, device, exc, err) -> None
     assert result["errors"] == {"base": err}
 
 
+async def test_config_flow_rejects_invalid_device_identity(
+    hass: HomeAssistant, device
+) -> None:
+    with patch(
+        f"{CLIENT}.get_info",
+        return_value=DeviceInfo(
+            mac="not-a-mac",
+            device_id="AQL00000001",
+            fw_version="1.6",
+            app="aqualoop-controller",
+        ),
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_HOST: "192.0.2.1"}
+        )
+
+    assert result["errors"] == {"base": "invalid_device"}
+
+
 async def test_entities_and_control(hass: HomeAssistant, device) -> None:
     await setup(hass)
     st = hass.states.get(WH)
@@ -137,8 +160,49 @@ async def test_device_error_surfaces(hass: HomeAssistant, device) -> None:
         await hass.services.async_call(WH_DOMAIN, "turn_on", {ATTR_ENTITY_ID: WH}, blocking=True)
 
 
+async def test_rpc_device_error_payload_surfaces() -> None:
+    from custom_components.aqualoop.api import AqualoopClient
+
+    client = AqualoopClient("192.0.2.1", None)
+    with patch.object(
+        client,
+        "_call",
+        new=AsyncMock(return_value={"error": -1, "message": "heater sensor error"}),
+    ), pytest.raises(AqualoopError, match="heater sensor error"):
+        await client.set_setpoint(60)
+
+
+async def test_rpc_malformed_payload_surfaces() -> None:
+    from custom_components.aqualoop.api import AqualoopClient
+
+    client = AqualoopClient("192.0.2.1", None)
+    with patch.object(client, "_call", new=AsyncMock(return_value={"setpoint": "bad"})):
+        with pytest.raises(AqualoopError, match="invalid heater response"):
+            await client.get_state()
+
+
+async def test_last_target_is_restored(hass: HomeAssistant, device) -> None:
+    with patch(
+        "custom_components.aqualoop.water_heater.AqualoopWaterHeater.async_get_last_state",
+        new=AsyncMock(return_value=State(WH, STATE_OFF, {ATTR_TEMPERATURE: 64})),
+    ):
+        await setup(hass)
+
+    await hass.services.async_call(
+        WH_DOMAIN, "turn_on", {ATTR_ENTITY_ID: WH}, blocking=True
+    )
+    assert device.calls[-1] == 64
+
+
 async def test_sensor_fault_marks_unavailable(hass: HomeAssistant, device) -> None:
     device.s = state(temperature=-1, error=True)
     await setup(hass)
     assert hass.states.get(WH).state == "unavailable"
     assert hass.states.get("binary_sensor.aqualoop_aql00000001_sensor_error").state == "on"
+
+
+async def test_not_ready_marks_water_heater_unavailable(hass: HomeAssistant, device) -> None:
+    device.s = state(temperature=120, ready=False)
+    await setup(hass)
+    assert hass.states.get(WH).state == "unavailable"
+    assert hass.states.get("binary_sensor.aqualoop_aql00000001_ready").state == "off"
