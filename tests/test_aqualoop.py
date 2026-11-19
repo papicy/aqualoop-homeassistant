@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -208,6 +209,43 @@ async def test_rpc_malformed_payload_surfaces() -> None:
     with patch.object(client, "_call", new=AsyncMock(return_value={"setpoint": "bad"})):
         with pytest.raises(AqualoopError, match="invalid heater response"):
             await client.get_state()
+
+
+async def test_rpc_retries_transient_transport_failure() -> None:
+    from custom_components.aqualoop.api import AqualoopClient
+
+    class Response:
+        status = 200
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return None
+
+        async def text(self):
+            return (
+                '{"ready": true, "error": false, "temperature": 53, '
+                '"setpoint": 0, "heating": false}'
+            )
+
+    class Session:
+        def __init__(self):
+            self.calls = 0
+
+        def post(self, *args, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                raise asyncio.TimeoutError
+            return Response()
+
+    session = Session()
+    client = AqualoopClient("192.0.2.1", session)
+
+    result = await client.get_state()
+
+    assert result.temperature == 53
+    assert session.calls == 2
 
 
 async def test_last_target_is_restored(hass: HomeAssistant, device) -> None:
