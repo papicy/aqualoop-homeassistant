@@ -17,7 +17,9 @@ from .entity import AqualoopEntity
 async def async_setup_entry(
     hass: HomeAssistant, entry: AqualoopConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    async_add_entities([AqualoopHeating(entry), AqualoopProblem(entry)])
+    async_add_entities(
+        [AqualoopHeating(entry), AqualoopProblem(entry), AqualoopReady(entry)]
+    )
 
 
 class AqualoopHeating(AqualoopEntity, BinarySensorEntity):
@@ -43,3 +45,15 @@ class AqualoopProblem(AqualoopEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         return self.coordinator.data.error
+
+
+class AqualoopReady(AqualoopEntity, BinarySensorEntity):
+    _attr_translation_key = "ready"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, entry: AqualoopConfigEntry) -> None:
+        super().__init__(entry, "ready")
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.data.ready

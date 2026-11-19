@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import voluptuous as vol
@@ -36,7 +37,16 @@ class AqualoopConfigFlow(ConfigFlow, domain=DOMAIN):
                 if info.app != "aqualoop-controller":
                     errors["base"] = "not_aqualoop"
                 else:
-                    await self.async_set_unique_id(format_mac(info.mac))
+                    normalized_mac = info.mac.replace(":", "").replace("-", "")
+                    if not re.fullmatch(r"[0-9a-fA-F]{12}", normalized_mac):
+                        errors["base"] = "invalid_device"
+                        return self.async_show_form(
+                            step_id="user",
+                            data_schema=vol.Schema({vol.Required(CONF_HOST): str}),
+                            errors=errors,
+                        )
+                    unique_id = format_mac(normalized_mac)
+                    await self.async_set_unique_id(unique_id)
                     self._abort_if_unique_id_configured(updates={CONF_HOST: host})
                     return self.async_create_entry(
                         title=f"Aqualoop {info.device_id}".strip(),

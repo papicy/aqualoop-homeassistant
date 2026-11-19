@@ -23,7 +23,8 @@
     },
     "binary_sensor": {
       "heating": { "name": "Heating" },
-      "sensor_error": { "name": "Sensor error" }
+      "sensor_error": { "name": "Sensor error" },
+      "ready": { "name": "Ready" }
     }
   }
 }
