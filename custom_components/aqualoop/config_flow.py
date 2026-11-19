@@ -19,7 +19,7 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
-    SelectorMode,
+    NumberSelectorMode,
 )
 
 from .api import AqualoopClient, AqualoopError, AqualoopNotPatchedError
@@ -109,7 +109,7 @@ class AqualoopOptionsFlow(OptionsFlowWithConfigEntry):
                             min=MIN_SCAN_INTERVAL_SECONDS,
                             max=MAX_SCAN_INTERVAL_SECONDS,
                             step=1,
-                            mode=SelectorMode.BOX,
+                            mode=NumberSelectorMode.BOX,
                         )
                     )
                 }
