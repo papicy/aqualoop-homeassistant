@@ -2,6 +2,8 @@
 
 This integration lets Home Assistant control an Aqualoop water heater over your local network. It does not need the cloud service. The controller's existing AWS connection stays enabled.
 
+This app was created with input from GitHub Copilot.
+
 ## What you need
 
 - An Aqualoop controller running `aqualoop-controller` firmware 1.6.
