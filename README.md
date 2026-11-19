@@ -119,14 +119,19 @@ IP address.
 ## Entities
 
 - `water_heater`: current temperature, target temperature, and on/off (operation `electric`/`off`). Turning it on uses the last target (default 60 °C).
-- `sensor`: Water temperature, Active setpoint
+- `sensor`: Water temperature, Active setpoint, Schedule count (with the
+  controller's currently configured schedules as attributes)
 - `binary_sensor`: Heating, Sensor error, Ready (diagnostic)
 
-The device is polled every 15 s. It reads its own temperature sensor about once a minute.
+The device is polled every 15 s by default. Change the interval from the
+integration's Configure menu when needed; valid values are 5–300 seconds. It
+reads its own temperature sensor about once a minute.
 The water heater is unavailable while the controller reports that it is not ready.
 
-Home Assistant diagnostics include the controller identity and current heater state;
-credentials are not included.
+Home Assistant diagnostics include redacted controller identity and current
+heater state; credentials are not included. The patch currently exposes
+read-only schedules. It does not expose a writable vacation mode because the
+controller RPC patch has no vacation/schedule mutation endpoint.
 
 ## Security note
 
@@ -135,6 +140,10 @@ The controller's RPC API on port 80 is unauthenticated. Anyone on your LAN can r
 ## Tests
 
 ```
-python -m pip install -r requirements-test.txt
-pytest
+python -m pip install --upgrade pip -r requirements-test.txt
+pytest -q
+git diff --check
 ```
+
+The patch installer supports `--dry-run` and `--no-reboot`. Use `--dry-run`
+before changing a controller, and keep the generated original-file backup.

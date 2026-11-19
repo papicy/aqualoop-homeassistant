@@ -17,6 +17,7 @@ import argparse
 import base64
 import json
 import pathlib
+import re
 import sys
 import time
 import urllib.error
@@ -43,7 +44,13 @@ def rpc(host: str, method: str, params: dict | None = None, timeout: int = 15):
 
 
 def get_file(host: str, name: str) -> bytes:
-    return base64.b64decode(rpc(host, "FS.Get", {"filename": name, "len": 60000})["data"])
+    result = rpc(host, "FS.Get", {"filename": name, "len": 60000})
+    if not isinstance(result, dict) or not isinstance(result.get("data"), str):
+        raise SystemExit(f"FS.Get did not return file data for {name}.")
+    try:
+        return base64.b64decode(result["data"], validate=True)
+    except ValueError as err:
+        raise SystemExit(f"FS.Get returned invalid data for {name}.") from err
 
 
 def put_file(host: str, name: str, data: bytes) -> None:
@@ -57,7 +64,7 @@ def put_file(host: str, name: str, data: bytes) -> None:
         raise SystemExit(f"Verification of {name} failed; device left unchanged.")
 
 
-def swap_and_reboot(host: str, data: bytes) -> None:
+def swap_and_reboot(host: str, data: bytes, reboot: bool = True) -> None:
     put_file(host, "init_new.js", data)
     try:
         rpc(host, "FS.Remove", {"filename": "init.js"})
@@ -75,6 +82,8 @@ def swap_and_reboot(host: str, data: bytes) -> None:
         raise SystemExit(f"Patch replacement failed: {err}") from err
     if get_file(host, "init.js") != data:
         raise SystemExit("init.js mismatch after rename. Re-run to retry.")
+    if not reboot:
+        return
     rpc(host, "Sys.Reboot", {"delay_ms": 500})
     print("Rebooting...")
     time.sleep(20)
@@ -91,36 +100,60 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("host")
     ap.add_argument("--restore", action="store_true")
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="download and validate the current file without changing the device",
+    )
+    ap.add_argument(
+        "--no-reboot",
+        action="store_true",
+        help="write the patch but do not reboot the controller",
+    )
     args = ap.parse_args()
 
     info = rpc(args.host, "Sys.GetInfo")
     if info.get("app") != "aqualoop-controller":
         raise SystemExit(f"Not an Aqualoop controller: {info.get('app')}")
-    dev = info.get("mac", "device")
+    dev = re.sub(r"[^0-9A-Za-z_-]", "_", str(info.get("mac", "device")))
     backup = HERE / f"init.js.{dev}.orig"
     current = get_file(args.host, "init.js")
 
     if args.restore:
         if not backup.exists():
             raise SystemExit(f"No backup found at {backup}")
-        swap_and_reboot(args.host, backup.read_bytes())
+        if args.dry_run:
+            print(f"Restore backup available: {backup}")
+            return
+        swap_and_reboot(args.host, backup.read_bytes(), reboot=not args.no_reboot)
         print("Original init.js restored.")
         return
 
-    text = current.decode("utf-8")
+    try:
+        text = current.decode("utf-8")
+    except UnicodeDecodeError as err:
+        raise SystemExit("init.js is not valid UTF-8; refusing to modify it.") from err
     if MARKER in text:
         original = text[: text.index(MARKER)].rstrip()
+        if not backup.exists():
+            backup.write_bytes(original.encode("utf-8"))
+            print(f"Backup recovered from existing patch: {backup}")
     else:
         original = text.rstrip()
         if not backup.exists():
             backup.write_bytes(current)
             print(f"Backup saved: {backup}")
     patched = (original + "\n\n" + PATCH.replace("\r\n", "\n")).encode("utf-8")
+    if args.dry_run:
+        print("Patch required." if patched != current else "Patch already installed.")
+        return
     if patched == current:
         print("Patch already installed.")
     else:
-        swap_and_reboot(args.host, patched)
+        swap_and_reboot(args.host, patched, reboot=not args.no_reboot)
 
+    if args.no_reboot:
+        return
     time.sleep(10)
     try:
         print("Heater.Get:", json.dumps(rpc(args.host, "Heater.Get")))
