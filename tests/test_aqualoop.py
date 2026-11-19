@@ -28,6 +28,7 @@ from custom_components.aqualoop.api import (
     HeaterState,
 )
 from custom_components.aqualoop.const import DOMAIN
+from custom_components.aqualoop.const import CONF_SCAN_INTERVAL
 
 INFO = DeviceInfo(mac="AA0000000001", device_id="AQL00000001", fw_version="1.6", app="aqualoop-controller")
 CLIENT = "custom_components.aqualoop.api.AqualoopClient"
@@ -124,6 +125,17 @@ async def test_config_flow_rejects_invalid_device_identity(
     assert result["errors"] == {"base": "invalid_device"}
 
 
+async def test_config_flow_rejects_empty_host(hass: HomeAssistant) -> None:
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: "   "}
+    )
+
+    assert result["errors"] == {"base": "invalid_host"}
+
+
 async def test_entities_and_control(hass: HomeAssistant, device) -> None:
     await setup(hass)
     st = hass.states.get(WH)
@@ -161,6 +173,7 @@ async def test_entities_have_relevant_icons(hass: HomeAssistant, device) -> None
         WH: "mdi:water-boiler",
         "sensor.aqualoop_aql00000001_water_temperature": "mdi:thermometer",
         "sensor.aqualoop_aql00000001_active_setpoint": "mdi:target",
+        "sensor.aqualoop_aql00000001_schedule_count": "mdi:calendar-clock",
         "binary_sensor.aqualoop_aql00000001_heating": "mdi:fire",
         "binary_sensor.aqualoop_aql00000001_sensor_error": "mdi:alert-circle",
         "binary_sensor.aqualoop_aql00000001_ready": "mdi:check-circle",
@@ -222,3 +235,52 @@ async def test_not_ready_marks_water_heater_unavailable(hass: HomeAssistant, dev
     await setup(hass)
     assert hass.states.get(WH).state == "unavailable"
     assert hass.states.get("binary_sensor.aqualoop_aql00000001_ready").state == "off"
+
+
+async def test_schedule_count_is_exposed(hass: HomeAssistant, device) -> None:
+    device.s = state(
+        schedules=[{"enabled": True, "start": "06:00", "setpoint": 60}]
+    )
+    await setup(hass)
+
+    schedule = hass.states.get("sensor.aqualoop_aql00000001_schedule_count")
+    assert schedule is not None
+    assert schedule.state == "1"
+    assert schedule.attributes["schedules"] == [
+        {"enabled": True, "start": "06:00", "setpoint": 60}
+    ]
+
+
+async def test_options_flow_changes_poll_interval(hass: HomeAssistant, device) -> None:
+    entry = await setup(hass)
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_SCAN_INTERVAL: 30}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options[CONF_SCAN_INTERVAL] == 30
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"ready": "yes"},
+        {"error": False, "temperature": 53, "setpoint": 0, "heating": False},
+        {
+            "ready": True,
+            "error": False,
+            "temperature": 53,
+            "setpoint": 29,
+            "heating": False,
+            "min_setpoint": 30,
+            "max_setpoint": 72,
+            "schedules": [],
+        },
+    ],
+)
+async def test_malformed_state_payload_is_rejected(payload) -> None:
+    from custom_components.aqualoop.api import AqualoopClient
+
+    with pytest.raises(AqualoopError, match="invalid heater response"):
+        AqualoopClient._parse_heater_state(payload)

@@ -14,7 +14,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import AqualoopClient, AqualoopError, DeviceInfo, HeaterState
-from .const import DOMAIN, SCAN_INTERVAL_SECONDS
+from .const import CONF_SCAN_INTERVAL, DOMAIN, SCAN_INTERVAL_SECONDS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,9 @@ class AqualoopCoordinator(DataUpdateCoordinator[HeaterState]):
             _LOGGER,
             config_entry=entry,
             name=DOMAIN,
-            update_interval=timedelta(seconds=SCAN_INTERVAL_SECONDS),
+            update_interval=timedelta(
+                seconds=entry.options.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL_SECONDS)
+            ),
         )
         self.client = client
 
@@ -65,6 +67,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AqualoopConfigEntry) -> 
         raise ConfigEntryNotReady(str(err)) from err
 
     coordinator = AqualoopCoordinator(hass, entry, client)
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = AqualoopData(coordinator, info)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -73,3 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: AqualoopConfigEntry) -> 
 
 async def async_unload_entry(hass: HomeAssistant, entry: AqualoopConfigEntry) -> bool:
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def _async_options_updated(hass: HomeAssistant, entry: AqualoopConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)

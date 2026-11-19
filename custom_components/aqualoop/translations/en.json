@@ -8,6 +8,7 @@
       }
     },
     "error": {
+      "invalid_host": "Enter a controller IP address or hostname.",
       "cannot_connect": "Cannot connect to the controller.",
       "not_patched": "The controller is reachable but missing the Heater.Get/Heater.Set handlers. Install device/install_patch.py first.",
       "not_aqualoop": "The device at this address is not an Aqualoop controller.",
@@ -17,10 +18,20 @@
       "already_configured": "This controller is already configured."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Aqualoop options",
+        "description": "Configure how often Home Assistant polls the controller.",
+        "data": { "scan_interval": "Polling interval (seconds)" }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "water_temperature": { "name": "Water temperature" },
-      "setpoint": { "name": "Active setpoint" }
+      "setpoint": { "name": "Active setpoint" },
+      "schedule_count": { "name": "Schedule count" }
     },
     "binary_sensor": {
       "heating": { "name": "Heating" },

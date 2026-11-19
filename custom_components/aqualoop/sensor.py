@@ -7,7 +7,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfTemperature
+from homeassistant.const import EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -18,7 +18,13 @@ from .entity import AqualoopEntity
 async def async_setup_entry(
     hass: HomeAssistant, entry: AqualoopConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    async_add_entities([AqualoopTemperature(entry), AqualoopSetpoint(entry)])
+    async_add_entities(
+        [
+            AqualoopTemperature(entry),
+            AqualoopSetpoint(entry),
+            AqualoopScheduleCount(entry),
+        ]
+    )
 
 
 class AqualoopTemperature(AqualoopEntity, SensorEntity):
@@ -50,3 +56,22 @@ class AqualoopSetpoint(AqualoopEntity, SensorEntity):
     @property
     def native_value(self) -> int:
         return self.coordinator.data.setpoint
+
+
+class AqualoopScheduleCount(AqualoopEntity, SensorEntity):
+    """Expose the controller's configured schedule count."""
+
+    _attr_translation_key = "schedule_count"
+    _attr_icon = "mdi:calendar-clock"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, entry: AqualoopConfigEntry) -> None:
+        super().__init__(entry, "schedule_count")
+
+    @property
+    def native_value(self) -> int:
+        return len(self.coordinator.data.schedules)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, list[dict]]:
+        return {"schedules": self.coordinator.data.schedules}

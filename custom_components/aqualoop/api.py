@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -44,27 +45,64 @@ class HeaterState:
         if not isinstance(data, dict):
             raise ValueError("heater response must be an object")
 
-        ready = bool(data.get("ready", True))
-        error = bool(data.get("error", False))
-        temp = data.get("temperature")
+        required = {"ready", "error", "temperature", "setpoint", "heating"}
+        missing = required - data.keys()
+        if missing:
+            raise ValueError(f"heater response missing {', '.join(sorted(missing))}")
+
+        ready = _require_bool(data["ready"], "ready")
+        error = _require_bool(data["error"], "error")
+        temp = _require_number(data["temperature"], "temperature")
         schedules = data.get("schedules")
         if schedules is None:
             schedules = []
-        if not isinstance(schedules, list):
+        if not isinstance(schedules, list) or not all(
+            isinstance(schedule, dict) for schedule in schedules
+        ):
             raise ValueError("heater schedules must be a list")
+
+        setpoint = _require_int(data["setpoint"], "setpoint")
+        min_setpoint = _require_int(data.get("min_setpoint", 30), "min_setpoint")
+        max_setpoint = _require_int(data.get("max_setpoint", 72), "max_setpoint")
+        if min_setpoint > max_setpoint:
+            raise ValueError("heater setpoint limits are invalid")
+        if setpoint != 0 and not min_setpoint <= setpoint <= max_setpoint:
+            raise ValueError("heater setpoint is outside the reported limits")
 
         return cls(
             temperature=(
-                float(temp) if ready and not error and temp is not None else None
+                temp if ready and not error else None
             ),
-            setpoint=int(data.get("setpoint", 0)),
-            heating=bool(data.get("heating", False)),
+            setpoint=setpoint,
+            heating=_require_bool(data["heating"], "heating"),
             error=error,
             ready=ready,
-            min_setpoint=int(data.get("min_setpoint", 30)),
-            max_setpoint=int(data.get("max_setpoint", 72)),
+            min_setpoint=min_setpoint,
+            max_setpoint=max_setpoint,
             schedules=schedules,
         )
+
+
+def _require_bool(value: Any, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"heater {name} must be a boolean")
+    return value
+
+
+def _require_number(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"heater {name} must be numeric")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"heater {name} must be finite")
+    return number
+
+
+def _require_int(value: Any, name: str) -> int:
+    number = _require_number(value, name)
+    if not number.is_integer():
+        raise ValueError(f"heater {name} must be an integer")
+    return int(number)
 
 
 class AqualoopClient:
