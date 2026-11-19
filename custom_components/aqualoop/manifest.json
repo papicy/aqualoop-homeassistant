@@ -1,6 +1,7 @@
 {
   "domain": "aqualoop",
   "name": "Aqualoop Water Heater",
+  "categories": ["climate.water_heaters"],
   "codeowners": ["@papicy"],
   "config_flow": true,
   "documentation": "https://github.com/papicy/aqualoop-homeassistant#readme",
