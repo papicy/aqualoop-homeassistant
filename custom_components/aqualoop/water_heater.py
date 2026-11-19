@@ -16,6 +16,7 @@ from homeassistant.components.water_heater import (
 from homeassistant.const import ATTR_TEMPERATURE, STATE_OFF, UnitOfTemperature
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import AqualoopConfigEntry
 from .const import DEFAULT_TARGET
@@ -28,7 +29,7 @@ async def async_setup_entry(
     async_add_entities([AqualoopWaterHeater(entry)])
 
 
-class AqualoopWaterHeater(AqualoopEntity, WaterHeaterEntity):
+class AqualoopWaterHeater(AqualoopEntity, RestoreEntity, WaterHeaterEntity):
     _attr_name = None
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_precision = 1.0
@@ -43,6 +44,17 @@ class AqualoopWaterHeater(AqualoopEntity, WaterHeaterEntity):
     def __init__(self, entry: AqualoopConfigEntry) -> None:
         super().__init__(entry, "water_heater")
         self._last_target = DEFAULT_TARGET
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if last_state := await self.async_get_last_state():
+            restored_target = last_state.attributes.get(ATTR_TEMPERATURE)
+            try:
+                restored_target = int(round(float(restored_target)))
+            except (TypeError, ValueError):
+                return
+            if self.min_temp <= restored_target <= self.max_temp:
+                self._last_target = restored_target
 
     @property
     def min_temp(self) -> float:
@@ -67,7 +79,11 @@ class AqualoopWaterHeater(AqualoopEntity, WaterHeaterEntity):
 
     @property
     def available(self) -> bool:
-        return super().available and not self.coordinator.data.error
+        return (
+            super().available
+            and self.coordinator.data.ready
+            and not self.coordinator.data.error
+        )
 
     @callback
     def _handle_coordinator_update(self) -> None:

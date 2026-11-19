@@ -59,8 +59,20 @@ def put_file(host: str, name: str, data: bytes) -> None:
 
 def swap_and_reboot(host: str, data: bytes) -> None:
     put_file(host, "init_new.js", data)
-    rpc(host, "FS.Remove", {"filename": "init.js"})
-    rpc(host, "FS.Rename", {"src": "init_new.js", "dst": "init.js"})
+    try:
+        rpc(host, "FS.Remove", {"filename": "init.js"})
+        rpc(host, "FS.Rename", {"src": "init_new.js", "dst": "init.js"})
+    except (OSError, ValueError, urllib.error.URLError) as err:
+        try:
+            get_file(host, "init.js")
+        except (OSError, ValueError, urllib.error.URLError):
+            try:
+                rpc(host, "FS.Rename", {"src": "init_new.js", "dst": "init.js"})
+            except (OSError, ValueError, urllib.error.URLError) as recovery_err:
+                raise SystemExit(
+                    f"Patch replacement failed and recovery failed: {recovery_err}"
+                ) from err
+        raise SystemExit(f"Patch replacement failed: {err}") from err
     if get_file(host, "init.js") != data:
         raise SystemExit("init.js mismatch after rename. Re-run to retry.")
     rpc(host, "Sys.Reboot", {"delay_ms": 500})

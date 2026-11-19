@@ -54,9 +54,13 @@ Restart Home Assistant. Then go to **Settings → Devices & services → Add int
 
 - `water_heater`: current temperature, target temperature, and on/off (operation `electric`/`off`). Turning it on uses the last target (default 60 °C).
 - `sensor`: Water temperature, Active setpoint
-- `binary_sensor`: Heating, Sensor error (diagnostic)
+- `binary_sensor`: Heating, Sensor error, Ready (diagnostic)
 
 The device is polled every 15 s. It reads its own temperature sensor about once a minute.
+The water heater is unavailable while the controller reports that it is not ready.
+
+Home Assistant diagnostics include the controller identity and current heater state;
+credentials are not included.
 
 ## Security note
 
