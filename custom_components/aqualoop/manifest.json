@@ -5,8 +5,8 @@
   "config_flow": true,
   "documentation": "https://github.com/papicy/aqualoop-homeassistant#readme",
   "integration_type": "device",
-  "issue_tracker": "https://github.com/papicy/aqualoop-homeassistant/issues",
   "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/papicy/aqualoop-homeassistant/issues",
   "requirements": [],
   "version": "1.0.0"
 }
