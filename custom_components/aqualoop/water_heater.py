@@ -31,6 +31,7 @@ async def async_setup_entry(
 
 class AqualoopWaterHeater(AqualoopEntity, RestoreEntity, WaterHeaterEntity):
     _attr_name = None
+    _attr_icon = "mdi:water-boiler"
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_precision = 1.0
     _attr_target_temperature_step = 1

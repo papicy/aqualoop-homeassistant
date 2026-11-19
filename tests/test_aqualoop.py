@@ -154,6 +154,22 @@ async def test_entities_and_control(hass: HomeAssistant, device) -> None:
     assert device.calls[-1] == 58
 
 
+async def test_entities_have_relevant_icons(hass: HomeAssistant, device) -> None:
+    await setup(hass)
+
+    expected_icons = {
+        WH: "mdi:water-boiler",
+        "sensor.aqualoop_aql00000001_water_temperature": "mdi:thermometer",
+        "sensor.aqualoop_aql00000001_active_setpoint": "mdi:target",
+        "binary_sensor.aqualoop_aql00000001_heating": "mdi:fire",
+        "binary_sensor.aqualoop_aql00000001_sensor_error": "mdi:alert-circle",
+        "binary_sensor.aqualoop_aql00000001_ready": "mdi:check-circle",
+    }
+
+    for entity_id, icon in expected_icons.items():
+        assert hass.states.get(entity_id).attributes["icon"] == icon
+
+
 async def test_device_error_surfaces(hass: HomeAssistant, device) -> None:
     await setup(hass)
     with patch(f"{CLIENT}.set_setpoint", side_effect=AqualoopError("boom")), pytest.raises(HomeAssistantError):

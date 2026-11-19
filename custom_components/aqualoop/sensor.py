@@ -23,6 +23,7 @@ async def async_setup_entry(
 
 class AqualoopTemperature(AqualoopEntity, SensorEntity):
     _attr_translation_key = "water_temperature"
+    _attr_icon = "mdi:thermometer"
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
@@ -39,6 +40,7 @@ class AqualoopSetpoint(AqualoopEntity, SensorEntity):
     """Active setpoint; 0 means idle."""
 
     _attr_translation_key = "setpoint"
+    _attr_icon = "mdi:target"
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
 
