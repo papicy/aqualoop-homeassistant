@@ -24,6 +24,7 @@ async def async_setup_entry(
 
 class AqualoopHeating(AqualoopEntity, BinarySensorEntity):
     _attr_translation_key = "heating"
+    _attr_icon = "mdi:fire"
     _attr_device_class = BinarySensorDeviceClass.HEAT
 
     def __init__(self, entry: AqualoopConfigEntry) -> None:
@@ -36,6 +37,7 @@ class AqualoopHeating(AqualoopEntity, BinarySensorEntity):
 
 class AqualoopProblem(AqualoopEntity, BinarySensorEntity):
     _attr_translation_key = "sensor_error"
+    _attr_icon = "mdi:alert-circle"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -49,6 +51,7 @@ class AqualoopProblem(AqualoopEntity, BinarySensorEntity):
 
 class AqualoopReady(AqualoopEntity, BinarySensorEntity):
     _attr_translation_key = "ready"
+    _attr_icon = "mdi:check-circle"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, entry: AqualoopConfigEntry) -> None:
