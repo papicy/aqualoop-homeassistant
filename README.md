@@ -147,3 +147,29 @@ git diff --check
 
 The patch installer supports `--dry-run` and `--no-reboot`. Use `--dry-run`
 before changing a controller, and keep the generated original-file backup.
+
+## Releases
+
+Run releases from a clean local checkout of the latest `main` branch. Preview
+the next patch version with:
+
+```
+python scripts/release.py --bump patch --dry-run
+```
+
+To update every tracked version metadata file and run the complete test suite:
+
+```
+python scripts/release.py --bump patch
+```
+
+Review that change through the normal commit, push, pull request, and merge
+workflow. After the version bump is merged into `main`, run:
+
+```
+python scripts/release.py --publish
+```
+
+The publish mode verifies that local `main` matches `origin/main`, reruns the
+quality checks, creates the matching Git tag, pushes it, and publishes the
+GitHub release.
