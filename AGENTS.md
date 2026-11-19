@@ -7,7 +7,7 @@ Do not commit or open a pull request until the local quality checks pass.
 1. Install the test dependency when needed:
 
    ```text
-   python -m pip install --upgrade pip pytest-homeassistant-custom-component
+   python -m pip install --upgrade pip -r requirements-test.txt
    ```
 
 2. Run the complete test suite:

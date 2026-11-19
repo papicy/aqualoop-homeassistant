@@ -135,6 +135,6 @@ The controller's RPC API on port 80 is unauthenticated. Anyone on your LAN can r
 ## Tests
 
 ```
-pip install pytest-homeassistant-custom-component
+python -m pip install -r requirements-test.txt
 pytest
 ```
