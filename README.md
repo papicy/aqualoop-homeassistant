@@ -1,12 +1,16 @@
 # Aqualoop Water Heater for Home Assistant
 
-Local control of an Aqualoop controller (ESP32 / Mongoose OS, `aqualoop-controller` fw 1.6) with no cloud dependency.
+This integration lets Home Assistant control an Aqualoop water heater over your local network. It does not need the cloud service. The controller's existing AWS connection stays enabled.
 
-The integration communicates over the local network. The controller's original AWS cloud connection remains enabled.
+## What you need
+
+- An Aqualoop controller running `aqualoop-controller` firmware 1.6.
+- The controller's IP address.
+- Access to your Home Assistant configuration folder.
 
 ## How it works
 
-The stock firmware sends temperature and setpoint only to AWS IoT. `device/install_patch.py` adds two local RPC methods to the controller's `init.js`:
+The original firmware does not provide the local controls that Home Assistant needs. The patch in `device/install_patch.py` adds these two local RPC methods to the controller:
 
 | Method | Body | Returns |
 |---|---|---|
@@ -17,38 +21,84 @@ The stock firmware sends temperature and setpoint only to AWS IoT. `device/insta
 
 ## 1. Patch the controller
 
-Replace `192.0.2.1` with your controller's address:
+Run the patch from the repository's `device` folder. Replace `192.0.2.1` with the controller's IP address:
 
 ```
 cd device
-python install_patch.py 192.0.2.1            # install (backs up original first) + reboot
-python install_patch.py 192.0.2.1 --restore  # put the original back
+python install_patch.py 192.0.2.1
 ```
 
-Keep the original firmware backup safe. It remains local and is excluded from Git.
+The installer saves a copy of the original file and reboots the controller. Keep that backup safe. It stays on your computer and is not added to Git.
 
-Re-run the installer if a vendor OTA update replaces `init.js`. The integration reports `not_patched` when the handlers are missing.
+To restore the original file:
 
-## 2. Install the integration
+```
+python install_patch.py 192.0.2.1 --restore
+```
 
-Copy `custom_components/aqualoop` to `<config>/custom_components/aqualoop`.
+Run the installer again if a vendor update replaces `init.js`. Home Assistant shows `not_patched` when the controller has not been patched.
 
-The included `brand` folder supplies the integration icon on Home Assistant 2026.3 and later.
-For an existing installation, create `brand` inside the `aqualoop` integration folder and copy both images into it:
+## 2. Install the integration in Home Assistant
+
+The HACS Marketplace is the recommended installation method. Use the GitHub or manual method only when the Marketplace option is unavailable.
+
+### Option A: Install from the HACS Marketplace
+
+**Recommended.** Use this method when **Aqualoop Water Heater** is listed in the HACS Marketplace:
+
+1. Open **HACS** in Home Assistant.
+2. Open **Integrations**.
+3. Search for **Aqualoop Water Heater**.
+4. Select it and choose **Download**.
+
+Restart Home Assistant after the download finishes.
+
+### Option B: Install from this GitHub repository
+
+Use this method if the integration is not yet in the HACS Marketplace:
+
+1. Open **HACS** in Home Assistant.
+2. Open **Integrations**.
+3. Open the menu in the top-right and choose **Custom repositories**.
+4. Enter `https://github.com/papicy/aqualoop-homeassistant`.
+5. Select **Integration** as the repository type and choose **Add**.
+6. Find **Aqualoop** in HACS and select **Download**.
+
+Restart Home Assistant after the download finishes.
+
+### Option C: Copy the integration manually
+
+Copy the `custom_components/aqualoop` folder from this repository to:
+
+```text
+<config>/custom_components/aqualoop
+```
+
+For example, the final folder should contain:
+
+```text
+custom_components\
+  aqualoop\
+    __init__.py
+    config_flow.py
+    manifest.json
+```
+
+The repository already includes the `brand` folder and its integration icons. Keep that folder when copying the integration. For an older installation, add these files if they are missing:
 
 ```text
 custom_components\
   aqualoop\
     brand\
-      icon.png       (256 x 256)
-      icon@2x.png    (512 x 512)
+      icon.png
+      icon@2x.png
 ```
 
-Keep these exact filenames. Restart Home Assistant after copying the files; no configuration changes are needed.
+Restart Home Assistant after copying the files. No YAML configuration is needed.
 
-HACS cannot install [private GitHub repositories](https://hacs.xyz/docs/faq/private_repositories/).
+## 3. Add the integration
 
-Restart Home Assistant. Then go to **Settings → Devices & services → Add integration → Aqualoop** and enter the IP address.
+In Home Assistant, go to **Settings → Devices & services → Add integration**, search for **Aqualoop**, and enter the controller's IP address.
 
 ## Entities
 
